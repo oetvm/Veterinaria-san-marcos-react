@@ -44,7 +44,7 @@ Veterinaria-san-marcos-react/
 ├── package.json
 └── vite.config.js
 ```
-✨ Funcionalidades y Navegación
+## ✨ Funcionalidades y Navegación
 Navegación y tema: acceso a Inicio, Productos, Carrito, Iniciar Sesión y Registrarse, junto con alternancia entre modo claro y Oscuro.
 
 Operaciones CRUD conectadas a MySQL: gestión de productos, carrito/pedidos, mascotas y citas a través de los servicios con Axios y el backend en el puerto 8080.
@@ -53,7 +53,7 @@ Sesión y roles: control de acceso y acciones según usuario autenticado y rol (
 
 Validaciones en formularios: validación de nombres y razas (solo letras y espacios), años de 4 dígitos, bloqueo de fechas/horas pasadas al agendar citas y límites de edad según especie (Exótico hasta 80 años; otras especies hasta 25 años).
 
-🚀 Ejecución Local (VS Code)
+## 🚀 Ejecución Local (VS Code)
 - Verifica que MySQL y el Backend (Spring Boot) estén corriendo en http://localhost:8080.
 - Abre la carpeta Veterinaria-san-marcos-react en VS Code y abre la terminal integrada.
 - Instala las dependencias:
@@ -66,6 +66,6 @@ Validaciones en formularios: validación de nombres y razas (solo letras y espac
 - Para ejecutar pruebas unitarias con Vitest:
   npm test
 
-🔐 Cuentas de Prueba (Datos Iniciales)
+## 🔐 Cuentas de Prueba (Datos Iniciales)
 - Administrador (admin): admin@veterinaria.cl / admin123
 - Cliente (cliente): juan@duocuc.cl / 123456
