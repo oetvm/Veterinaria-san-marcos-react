@@ -31,6 +31,8 @@ export default function Header({ modoOscuro, toggleModoOscuro }) {
               {usuario.rol === 'admin' && (
                 <li><Link to="/admin">Admin / Panel</Link></li>
               )}
+              <li><Link to="/mascotas">Mascotas</Link></li>
+              <li><Link to="/citas">Citas</Link></li>
               <li><Link to="/perfil">Mi Perfil</Link></li>
               <li>
                 <button 

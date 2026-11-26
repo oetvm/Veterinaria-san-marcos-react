@@ -13,7 +13,12 @@ import Registro from './views/Registro';
 import Admin from './views/Admin';
 import Carrito from './views/Carrito';
 import Perfil from './views/Perfil';
+import Mascotas from './views/Mascotas';
+import Citas from './views/Citas';
 import NotFound from './views/NotFound';
+
+import MascotaForm from './components/MascotaForm';
+import CitaForm from './components/CitaForm';
 
 export default function App() {
   // Estado para el modo oscuro con persistencia en localStorage
@@ -137,10 +142,19 @@ export default function App() {
               } 
             />
             <Route path="/perfil" element={<RutaAutenticada><Perfil /></RutaAutenticada>} />
+            <Route path="/mascotas" element={<RutaAutenticada><Mascotas /></RutaAutenticada>} />
+            <Route path="/citas" element={<RutaAutenticada><Citas /></RutaAutenticada>} />
           </Route>
 
           {/* Ruta 404 fuera de MainLayout (pantalla totalmente en blanco sin Header/Footer) */}
           <Route path="*" element={<NotFound />} />
+
+          <Route path="/mascotas/nueva" element={<MascotaForm />} />
+          <Route path="/mascotas/editar/:id" element={<MascotaForm />} />
+
+          <Route path="/citas/nueva" element={<CitaForm />} />
+          <Route path="/citas/editar/:id" element={<CitaForm />} />
+        
         </Routes>
       </BrowserRouter>
     </div>

@@ -1,40 +1,55 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../services/api';
+
+const DOMINIOS_PERMITIDOS = ['@veterinaria.cl', '@gmail.com', '@duocuc.cl'];
+const REGEX_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login() {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(false);
   const navigate = useNavigate();
 
-  const dominiosPermitidos = ['@veterinaria.cl', '@gmail.com', '@duocuc.cl'];
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!correo || !password) {
+    const correoLimpio = correo.trim().toLowerCase();
+
+    if (!correoLimpio || !password) {
       setError('Por favor complete todos los campos.');
       return;
     }
 
-    // Validar dominio del correo
-    const esDominioValido = dominiosPermitidos.some((dominio) =>
-      correo.toLowerCase().endsWith(dominio)
-    );
-
-    if (!esDominioValido) {
-      setError('El correo debe pertenecer a uno de los dominios permitidos (@veterinaria.cl, @gmail.com, @duocuc.cl).');
+    if (!REGEX_CORREO.test(correoLimpio)) {
+      setError('Ingrese un formato de correo electrónico válido.');
       return;
     }
 
-    // 1. Obtener usuarios registrados localmente
-    const usuariosExistentes = JSON.parse(localStorage.getItem('usuarios_registrados') || '[]');
+    const esDominioValido = DOMINIOS_PERMITIDOS.some((dominio) =>
+      correoLimpio.endsWith(dominio)
+    );
 
-    // 2. Verificar contra usuario administrador por defecto o usuarios guardados
+    if (!esDominioValido) {
+      setError(
+        'El correo debe pertenecer a uno de los dominios permitidos (@veterinaria.cl, @gmail.com, @duocuc.cl).'
+      );
+      return;
+    }
+
+    let usuariosExistentes = [];
+    try {
+      const raw = JSON.parse(localStorage.getItem('usuarios_registrados') || '[]');
+      usuariosExistentes = Array.isArray(raw) ? raw : [];
+    } catch {
+      usuariosExistentes = [];
+    }
+
     let usuarioEncontrado = null;
 
-    if (correo.toLowerCase() === 'admin@veterinaria.cl' && password === 'admin123') {
+    if (correoLimpio === 'admin@veterinaria.cl' && password === 'admin123') {
       usuarioEncontrado = {
         id: 1,
         nombre: 'Administrador San Marcos',
@@ -44,7 +59,9 @@ export default function Login() {
       };
     } else {
       usuarioEncontrado = usuariosExistentes.find(
-        (u) => u.correo.toLowerCase() === correo.toLowerCase() && u.password === password
+        (u) =>
+          String(u?.correo || '').toLowerCase().trim() === correoLimpio &&
+          u?.password === password
       );
     }
 
@@ -53,13 +70,29 @@ export default function Login() {
       return;
     }
 
-    // Guardar sesión activa y redirigir según el rol
-    localStorage.setItem('usuario_sesion', JSON.stringify(usuarioEncontrado));
-    
-    if (usuarioEncontrado.rol === 'admin') {
-      navigate('/admin');
-    } else {
-      navigate('/perfil');
+    setCargando(true);
+    try {
+      try {
+        const resAuth = await api.post('/auth/login', {
+          email: correoLimpio,
+          password
+        });
+        if (resAuth.data && resAuth.data.token) {
+          localStorage.setItem('token', resAuth.data.token);
+        }
+      } catch {
+        // Si el usuario solo existe en localStorage o el backend usa permitAll, continúa sin bloquear
+      }
+
+      localStorage.setItem('usuario_sesion', JSON.stringify(usuarioEncontrado));
+
+      if (usuarioEncontrado.rol === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/perfil');
+      }
+    } finally {
+      setCargando(false);
     }
   };
 
@@ -67,51 +100,73 @@ export default function Login() {
     <main>
       <section className="form-container">
         <h2>Iniciar Sesión</h2>
-        
-        {/* Bloque de credenciales para pruebas con contraste adaptado */}
-        <div style={{
-          backgroundColor: '#e6f4f1',
-          borderLeft: '4px solid #0d828a',
-          padding: '0.8rem 1rem',
-          borderRadius: '6px',
-          marginBottom: '1.5rem',
-          fontSize: '0.875rem',
-          color: '#1e293b' // Forzamos texto oscuro visible en modo claro y oscuro
-          }}>
-          <strong style={{ color: '#0f4c5c', display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem' }}>
+
+        <div
+          style={{
+            backgroundColor: '#e6f4f1',
+            borderLeft: '4px solid #0d828a',
+            padding: '0.8rem 1rem',
+            borderRadius: '6px',
+            marginBottom: '1.5rem',
+            fontSize: '0.875rem',
+            color: '#1e293b'
+          }}
+        >
+          <strong
+            style={{
+              color: '#0f4c5c',
+              display: 'block',
+              marginBottom: '0.3rem',
+              fontSize: '0.9rem'
+            }}
+          >
             Credenciales de Prueba (Admin):
           </strong>
-          <span><strong style={{ color: '#334155' }}>Correo:</strong> admin@veterinaria.cl</span><br />
-          <span><strong style={{ color: '#334155' }}>Contraseña:</strong> admin123</span>
+          <span>
+            <strong style={{ color: '#334155' }}>Correo:</strong> admin@veterinaria.cl
+          </span>
+          <br />
+          <span>
+            <strong style={{ color: '#334155' }}>Contraseña:</strong> admin123
+          </span>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <div className="campo">
             <label htmlFor="correo">Correo Electrónico:</label>
-            <input 
-              type="email" 
-              id="correo" 
-              value={correo} 
-              onChange={(e) => setCorreo(e.target.value)} 
+            <input
+              type="email"
+              id="correo"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
               placeholder="correo@veterinaria.cl"
             />
           </div>
 
           <div className="campo">
             <label htmlFor="password">Contraseña:</label>
-            <input 
-              type="password" 
-              id="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
             />
           </div>
 
-          {error && <p className="error">{error}</p>}
+          {error && (
+            <div role="alert" className="alerta-form alerta-error">
+              ⚠️ {error}
+            </div>
+          )}
 
-          <button type="submit" className="btn" style={{ width: '100%', marginTop: '1rem' }}>
-            Iniciar Sesión
+          <button
+            type="submit"
+            className="btn"
+            disabled={cargando}
+            style={{ width: '100%', marginTop: '1rem' }}
+          >
+            {cargando ? 'Ingresando...' : 'Iniciar Sesión'}
           </button>
         </form>
 

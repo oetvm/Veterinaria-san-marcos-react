@@ -1,129 +1,179 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../services/api';
+
+const DOMINIOS_PERMITIDOS = ['@veterinaria.cl', '@gmail.com', '@duocuc.cl'];
+const REGEX_SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+const REGEX_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Registro() {
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
-  const [mascota, setMascota] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(false);
   const navigate = useNavigate();
 
-  const dominiosPermitidos = ['@veterinaria.cl', '@gmail.com', '@duocuc.cl'];
-  // Permite solo letras (incluye acentos, ñ/Ñ y espacios)
-  const regexSoloLetras = /^[a-zA-Za-eíóúÁÉÍÓÚñÑ\s]+$/;
-
-  const handleRegistro = (e) => {
+  const handleRegistro = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!nombre.trim() || !correo.trim() || !password) {
+    const nombreLimpio = nombre.trim();
+    const correoLimpio = correo.trim().toLowerCase();
+
+    if (!nombreLimpio || !correoLimpio || !password) {
       setError('Por favor complete todos los campos obligatorios.');
       return;
     }
 
-    // Validar que el nombre contenga solo letras
-    if (!regexSoloLetras.test(nombre.trim())) {
-      setError('El nombre completo solo debe contener letras y espacios, sin números ni símbolos.');
+    if (nombreLimpio.length < 2 || !REGEX_SOLO_LETRAS.test(nombreLimpio)) {
+      setError(
+        'El nombre completo debe tener al menos 2 caracteres y solo contener letras y espacios, sin números ni símbolos.'
+      );
       return;
     }
 
-    // Validar dominios permitidos
-    const esDominioValido = dominiosPermitidos.some((dominio) =>
-      correo.toLowerCase().endsWith(dominio)
+    if (!REGEX_CORREO.test(correoLimpio)) {
+      setError('Ingrese un formato de correo electrónico válido.');
+      return;
+    }
+
+    const esDominioValido = DOMINIOS_PERMITIDOS.some((dominio) =>
+      correoLimpio.endsWith(dominio)
     );
 
     if (!esDominioValido) {
-      setError('El correo debe pertenecer a uno de los dominios permitidos (@veterinaria.cl, @gmail.com, @duocuc.cl).');
+      setError(
+        'El correo debe pertenecer a uno de los dominios permitidos (@veterinaria.cl, @gmail.com, @duocuc.cl).'
+      );
       return;
     }
 
-    const usuariosExistentes = JSON.parse(localStorage.getItem('usuarios_registrados') || '[]');
+    if (password.trim().length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
 
-    // Validar que no esté duplicado
-    const existe = usuariosExistentes.some((u) => u.correo.toLowerCase() === correo.toLowerCase());
-    if (existe || correo.toLowerCase() === 'admin@veterinaria.cl') {
+    let usuariosExistentes = [];
+    try {
+      const raw = JSON.parse(localStorage.getItem('usuarios_registrados') || '[]');
+      usuariosExistentes = Array.isArray(raw) ? raw : [];
+    } catch {
+      usuariosExistentes = [];
+    }
+
+    const existe = usuariosExistentes.some(
+      (u) => String(u?.correo || '').toLowerCase().trim() === correoLimpio
+    );
+    if (existe || correoLimpio === 'admin@veterinaria.cl') {
       setError('Este correo electrónico ya se encuentra registrado.');
       return;
     }
 
-    // Definir rol según el correo
-    const esAdmin = correo.toLowerCase().includes('admin') || correo.toLowerCase().endsWith('@veterinaria.cl');
+    setCargando(true);
 
-    const nuevoUsuario = {
-      id: Date.now(),
-      nombre: nombre.trim(),
-      correo: correo.trim(),
-      mascota: mascota.trim() || 'Sin mascota registrada',
-      password,
-      rol: esAdmin ? 'admin' : 'cliente'
-    };
+    try {
+      const esAdmin =
+        correoLimpio.includes('admin') || correoLimpio.endsWith('@veterinaria.cl');
 
-    usuariosExistentes.push(nuevoUsuario);
-    localStorage.setItem('usuarios_registrados', JSON.stringify(usuariosExistentes));
-    localStorage.setItem('usuario_sesion', JSON.stringify(nuevoUsuario));
+      const clientePayload = {
+        nombre: nombreLimpio,
+        correo: correoLimpio,
+        password,
+        rol: esAdmin ? 'admin' : 'cliente'
+      };
 
-    navigate(nuevoUsuario.rol === 'admin' ? '/admin' : '/perfil');
+      const resCliente = await api.post('/clientes', clientePayload);
+      const clienteGuardado = resCliente?.data || {};
+      const clienteIdReal = clienteGuardado.id || Date.now();
+
+      const nuevoUsuario = {
+        id: clienteIdReal,
+        nombre: nombreLimpio,
+        correo: correoLimpio,
+        password,
+        rol: esAdmin ? 'admin' : 'cliente'
+      };
+
+      usuariosExistentes.push(nuevoUsuario);
+      localStorage.setItem('usuarios_registrados', JSON.stringify(usuariosExistentes));
+      localStorage.setItem('usuario_sesion', JSON.stringify(nuevoUsuario));
+
+      navigate(nuevoUsuario.rol === 'admin' ? '/admin' : '/perfil');
+    } catch (err) {
+      console.error('Error al guardar en backend:', err);
+      setError(
+        'No se pudo registrar el cliente en la base de datos. Verifica que el backend esté encendido.'
+      );
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
     <main>
       <section className="form-container">
         <h2>Crear Cuenta</h2>
-        
-        <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '1rem', textAlign: 'center' }}>
-          Dominios admitidos: <strong>@veterinaria.cl</strong>, <strong>@gmail.com</strong>, <strong>@duocuc.cl</strong>
+
+        <p
+          style={{
+            fontSize: '0.825rem',
+            color: 'var(--text-muted)',
+            marginBottom: '1rem',
+            textAlign: 'center'
+          }}
+        >
+          Dominios admitidos: <strong>@veterinaria.cl</strong>,{' '}
+          <strong>@gmail.com</strong>, <strong>@duocuc.cl</strong>
         </p>
 
-        <form onSubmit={handleRegistro}>
+        <form onSubmit={handleRegistro} noValidate>
           <div className="campo">
             <label htmlFor="nombre">Nombre Completo:</label>
-            <input 
-              type="text" 
-              id="nombre" 
-              value={nombre} 
-              onChange={(e) => setNombre(e.target.value)} 
+            <input
+              type="text"
+              id="nombre"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
               placeholder="Ej: Juan Pérez"
             />
           </div>
 
           <div className="campo">
             <label htmlFor="correo">Correo Electrónico:</label>
-            <input 
-              type="email" 
-              id="correo" 
-              value={correo} 
-              onChange={(e) => setCorreo(e.target.value)} 
+            <input
+              type="email"
+              id="correo"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
               placeholder="ejemplo@duocuc.cl"
             />
           </div>
 
           <div className="campo">
-            <label htmlFor="mascota">Nombre de tu Mascota (Opcional):</label>
-            <input 
-              type="text" 
-              id="mascota" 
-              value={mascota} 
-              onChange={(e) => setMascota(e.target.value)} 
-              placeholder="Ej: Cachupín"
-            />
-          </div>
-
-          <div className="campo">
             <label htmlFor="password">Contraseña:</label>
-            <input 
-              type="password" 
-              id="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              placeholder="••••••••"
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
             />
           </div>
 
-          {error && <p className="error">{error}</p>}
+          {error && (
+            <div role="alert" className="alerta-form alerta-error">
+              ⚠️ {error}
+            </div>
+          )}
 
-          <button type="submit" className="btn" style={{ width: '100%', marginTop: '1rem' }}>
-            Registrarse
+          <button
+            type="submit"
+            className="btn"
+            disabled={cargando}
+            style={{ width: '100%', marginTop: '1rem' }}
+          >
+            {cargando ? 'Registrando en BD...' : 'Registrarse'}
           </button>
         </form>
 

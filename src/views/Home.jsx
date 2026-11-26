@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 // Importamos los archivos multimedia dinámicamente
 import imagenInicio from '../assets/img/banner.png';
-import videoPresentacion from '../assets/img/veterinaria.mp4';
+// import videoPresentacion from '../assets/img/veterinaria.mp4';
 
 export default function Home() {
   return (
@@ -29,10 +29,10 @@ export default function Home() {
           Te invitamos a ver cómo cuidamos a tus mascotas en la Clínica Veterinaria San Marcos.
         </p>
         <div className="video-contenedor">
-          <video controls poster={imagenInicio}>
+          {/*<video controls poster={imagenInicio}>
             <source src={videoPresentacion} type="video/mp4" />
             Tu navegador no soporta la reproducción de video HTML5.
-          </video>
+          </video>*/}
         </div>
       </section>
     </main>

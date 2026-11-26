@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. VARIABLES GLOBALES Y MODO OSCURO
+1. VARIABLES GLOBALES Y MODO OSCURO
    ========================================================================== */
 :root {
   --primary-color: #0d828a;
@@ -74,7 +74,7 @@ main {
 }
 
 /* ==========================================================================
-   2. ESTRUCTURA Y LAYOUT (Header, Nav, Footer, Botones)
+2. ESTRUCTURA Y LAYOUT (Header, Nav, Footer, Botones)
    ========================================================================== */
 header {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
@@ -195,10 +195,23 @@ footer {
   transform: translateY(-2px);
 }
 
-input, select {
+input,
+select {
   background-color: var(--surface-color);
   color: var(--text-main);
   border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(13, 130, 138, 0.15);
 }
 
 .dark-theme input,
@@ -209,7 +222,7 @@ input, select {
 }
 
 /* ==========================================================================
-   3. SECCIONES Y MULTIMEDIA (Inicio, Presentación y Video)
+3. SECCIONES Y MULTIMEDIA (Inicio, Presentación y Video)
    ========================================================================== */
 .presentacion {
   background-color: var(--surface-color);
@@ -291,7 +304,7 @@ input, select {
 }
 
 /* ==========================================================================
-   4. CATÁLOGO DE PRODUCTOS
+4. CATÁLOGO DE PRODUCTOS
    ========================================================================== */
 .catalogo-grid {
   display: grid;
@@ -350,7 +363,7 @@ input, select {
 }
 
 /* ==========================================================================
-   5. DETALLE DE PRODUCTO
+5. DETALLE DE PRODUCTO
    ========================================================================== */
 .detalle-container {
   background: var(--surface-color);
@@ -458,7 +471,7 @@ input, select {
 }
 
 /* ==========================================================================
-   6. TARJETAS Y TABLAS ADAPTABLES (Admin, Carrito, Perfil)
+6. TARJETAS, TABLAS ADAPTABLES Y FORMULARIOS
    ========================================================================== */
 .tarjeta-panel {
   background-color: var(--surface-color);
@@ -466,7 +479,21 @@ input, select {
   padding: 2rem;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+  border-top: 4px solid var(--primary-color);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.tarjeta-panel h2,
+.tarjeta-panel h3,
+.tarjeta-panel h4 {
+  color: var(--primary-dark);
+  margin-bottom: 0.75rem;
+}
+
+.dark-theme .tarjeta-panel h2,
+.dark-theme .tarjeta-panel h3,
+.dark-theme .tarjeta-panel h4 {
+  color: #38bdf8;
 }
 
 .titulo-seccion {
@@ -486,16 +513,67 @@ input, select {
 }
 
 .tabla-adaptable th {
-  padding: 0.75rem 0.5rem;
+  padding: 0.75rem 0.65rem;
   border-bottom: 2px solid var(--border-color);
   text-align: left;
   color: var(--text-main);
+  font-weight: 700;
 }
 
 .tabla-adaptable td {
-  padding: 0.75rem 0.5rem;
+  padding: 0.75rem 0.65rem;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-main);
+  vertical-align: middle;
+}
+
+.tabla-adaptable tbody tr:hover {
+  background-color: rgba(13, 130, 138, 0.05);
+}
+
+.dark-theme .tabla-adaptable tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.acciones-tabla {
+  display: inline-flex;
+  gap: 0.45rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-accion {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-accion:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.btn-accion-editar {
+  background-color: var(--primary-color);
+}
+
+.btn-accion-editar:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-accion-eliminar {
+  background-color: var(--error-color);
+}
+
+.btn-accion-eliminar:hover {
+  background-color: #dc2626;
 }
 
 .form-container {
@@ -534,7 +612,8 @@ input, select {
   margin-bottom: 0.4rem;
 }
 
-.campo input, .campo select {
+.campo input,
+.campo select {
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
@@ -543,4 +622,115 @@ input, select {
   background-color: var(--surface-color);
   color: var(--text-main);
   outline: none;
+}
+
+/* Selector de modo y botón de archivo estilizado */
+.imagen-modo-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.imagen-modo-btn {
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-color);
+  color: var(--text-muted);
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.imagen-modo-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--text-main);
+}
+
+.imagen-modo-btn.activo {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.file-input-oculto {
+  display: none !important;
+}
+
+.file-upload-box {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--surface-color);
+  flex-wrap: wrap;
+}
+
+.dark-theme .file-upload-box {
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+.file-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: #ffffff !important;
+  padding: 0.48rem 0.95rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0 !important;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.file-upload-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.file-upload-nombre {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+/* ==========================================================================
+7. ALERTAS Y MENSAJES DE VALIDACIÓN
+   ========================================================================== */
+.alerta-form {
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.alerta-error {
+  background-color: rgba(239, 68, 68, 0.14);
+  border: 1px solid var(--error-color);
+  color: #b91c1c;
+}
+
+.dark-theme .alerta-error {
+  color: #fca5a5;
+}
+
+.alerta-exito {
+  background-color: rgba(16, 185, 129, 0.14);
+  border: 1px solid var(--accent-color);
+  color: #047857;
+}
+
+.dark-theme .alerta-exito {
+  color: #6ee7b7;
 }
