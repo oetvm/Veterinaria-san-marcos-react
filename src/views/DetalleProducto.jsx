@@ -63,7 +63,12 @@ export default function DetalleProducto({ productos = [], agregarAlCarrito }) {
         <p style={{ margin: '1rem 0', color: 'var(--text-muted)' }}>
           El producto que buscas no existe o fue eliminado.
         </p>
-        <Link to="/productos" className="btn">Volver al Catálogo</Link>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <Link to="/productos" className="btn">Volver al Catálogo</Link>
+          <Link to="/carrito" className="btn" style={{ backgroundColor: '#475569' }}>
+            Ir al Carrito
+          </Link>
+        </div>
       </main>
     );
   }
@@ -118,12 +123,27 @@ export default function DetalleProducto({ productos = [], agregarAlCarrito }) {
 
           {mensaje && <p className="mensaje-exito">{mensaje}</p>}
 
-          <div style={{ marginTop: '2rem' }}>
+          <div
+            style={{
+              marginTop: '2rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
             <Link
               to="/productos"
               style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: 'bold' }}
             >
               ← Volver al Catálogo
+            </Link>
+            <Link
+              to="/carrito"
+              style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: 'bold' }}
+            >
+              Ir al Carrito →
             </Link>
           </div>
         </div>

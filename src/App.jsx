@@ -86,9 +86,16 @@ export default function App() {
   // Rutas Protegidas
   const RutaAdmin = ({ children }) => {
     const sesionGuardada = localStorage.getItem('usuario_sesion');
-    const usuario = sesionGuardada ? JSON.parse(sesionGuardada) : null;
+    let usuario = null;
+    try {
+      usuario = sesionGuardada ? JSON.parse(sesionGuardada) : null;
+    } catch {
+      usuario = null;
+    }
     if (!usuario) return <Navigate to="/login" replace />;
-    if (usuario.rol !== 'admin') return <Navigate to="/perfil" replace />;
+    if (String(usuario.rol || '').toLowerCase() !== 'admin') {
+      return <Navigate to="/perfil" replace />;
+    }
     return children;
   };
 
@@ -114,47 +121,98 @@ export default function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/productos" element={<Productos productos={productos} />} />
-            <Route path="/productos/:id" element={<DetalleProducto productos={productos} agregarAlCarrito={agregarAlCarrito} />} />
+            <Route
+              path="/productos/:id"
+              element={<DetalleProducto productos={productos} agregarAlCarrito={agregarAlCarrito} />}
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
-            <Route 
-              path="/carrito" 
+            <Route
+              path="/carrito"
               element={
-                <Carrito 
-                  carrito={carrito} 
+                <Carrito
+                  carrito={carrito}
                   actualizarCantidadCarrito={actualizarCantidadCarrito}
                   eliminarDelCarrito={eliminarDelCarrito}
-                  vaciarCarrito={vaciarCarrito} 
+                  vaciarCarrito={vaciarCarrito}
                 />
-              } 
+              }
             />
-            <Route 
-              path="/admin" 
+            <Route
+              path="/admin"
               element={
                 <RutaAdmin>
-                  <Admin 
-                    agregarProducto={agregarProducto} 
-                    eliminarProducto={eliminarProducto} 
+                  <Admin
+                    agregarProducto={agregarProducto}
+                    eliminarProducto={eliminarProducto}
                     editarProducto={editarProducto}
-                    productos={productos} 
+                    productos={productos}
                   />
                 </RutaAdmin>
-              } 
+              }
             />
-            <Route path="/perfil" element={<RutaAutenticada><Perfil /></RutaAutenticada>} />
-            <Route path="/mascotas" element={<RutaAutenticada><Mascotas /></RutaAutenticada>} />
-            <Route path="/citas" element={<RutaAutenticada><Citas /></RutaAutenticada>} />
+            <Route
+              path="/perfil"
+              element={
+                <RutaAutenticada>
+                  <Perfil />
+                </RutaAutenticada>
+              }
+            />
+            <Route
+              path="/mascotas"
+              element={
+                <RutaAutenticada>
+                  <Mascotas />
+                </RutaAutenticada>
+              }
+            />
+            <Route
+              path="/citas"
+              element={
+                <RutaAdmin>
+                  <Citas />
+                </RutaAdmin>
+              }
+            />
           </Route>
+
+          <Route
+            path="/mascotas/nueva"
+            element={
+              <RutaAutenticada>
+                <MascotaForm />
+              </RutaAutenticada>
+            }
+          />
+          <Route
+            path="/mascotas/editar/:id"
+            element={
+              <RutaAutenticada>
+                <MascotaForm />
+              </RutaAutenticada>
+            }
+          />
+
+          <Route
+            path="/citas/nueva"
+            element={
+              <RutaAdmin>
+                <CitaForm />
+              </RutaAdmin>
+            }
+          />
+          <Route
+            path="/citas/editar/:id"
+            element={
+              <RutaAdmin>
+                <CitaForm />
+              </RutaAdmin>
+            }
+          />
 
           {/* Ruta 404 fuera de MainLayout (pantalla totalmente en blanco sin Header/Footer) */}
           <Route path="*" element={<NotFound />} />
-
-          <Route path="/mascotas/nueva" element={<MascotaForm />} />
-          <Route path="/mascotas/editar/:id" element={<MascotaForm />} />
-
-          <Route path="/citas/nueva" element={<CitaForm />} />
-          <Route path="/citas/editar/:id" element={<CitaForm />} />
-        
         </Routes>
       </BrowserRouter>
     </div>

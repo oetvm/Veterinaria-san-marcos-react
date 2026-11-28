@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 // Importamos los archivos multimedia dinámicamente
 import imagenInicio from '../assets/img/banner.png';
-// import videoPresentacion from '../assets/img/veterinaria.mp4';
+//import videoPresentacion from '../assets/img/veterinaria.mp4';
 
 export default function Home() {
   return (

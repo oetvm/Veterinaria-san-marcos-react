@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import CitaService from '../services/CitaService';
 import MascotaService from '../services/MascotaService';
 
-const regexSoloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-
 const sanitizarFecha4Digitos = (valor) => {
   if (!valor) return '';
   const partes = String(valor).split('-');
@@ -36,23 +34,23 @@ const esFechaHoraPasada = (fechaStr, horaStr) => {
 
 export default function Citas() {
   const sesion = JSON.parse(localStorage.getItem('usuario_sesion') || 'null');
-  const esAdmin = sesion?.rol === 'admin';
+  const esAdmin = String(sesion?.rol || '').toLowerCase() === 'admin';
 
   const [citas, setCitas] = useState([]);
   const [mascotas, setMascotas] = useState([]);
   const [editCitaId, setEditCitaId] = useState(null);
   const [fechaHoraOriginalEdit, setFechaHoraOriginalEdit] = useState('');
-  const [mascotaCitaNombre, setMascotaCitaNombre] = useState('');
+  const [mascotaIdSeleccionada, setMascotaIdSeleccionada] = useState('');
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
   const [motivo, setMotivo] = useState('');
-  const [estadoCita, setEstadoCita] = useState('Pendiente');
+  const [estadoCita, setEstadoCita] = useState('Confirmada');
   const [alerta, setAlerta] = useState(null);
 
   const fechaHoy = obtenerFechaHoyLocal();
 
   const formatearEstado = (estado) => {
-    if (!estado) return 'Pendiente';
+    if (!estado) return 'Confirmada';
     const limpio = String(estado).trim().toLowerCase();
     const mapa = {
       pendiente: 'Pendiente',
@@ -66,77 +64,26 @@ export default function Citas() {
     return limpio.charAt(0).toUpperCase() + limpio.slice(1);
   };
 
-  const perteneceAlUsuario = (c, listaMascotas = mascotas) => {
-    if (!sesion) return false;
-    if (esAdmin) return true;
-
-    const idItem = c.clienteId ?? c.cliente?.id ?? c.usuarioId ?? null;
-    const correoItem = String(
-      c.correoCliente ?? c.cliente?.correo ?? c.correo ?? ''
-    )
-      .toLowerCase()
-      .trim();
-    const correoSesion = String(sesion.correo || '').toLowerCase().trim();
-
-    if (sesion.id != null && idItem != null && String(idItem) === String(sesion.id)) {
-      return true;
-    }
-    if (correoSesion && correoItem && correoItem === correoSesion) {
-      return true;
-    }
-
-    const nombreMascotaCita = String(c.nombreMascota || c.mascota?.nombre || '')
-      .toLowerCase()
-      .trim();
-    const mascotasDelCliente = listaMascotas.map((m) =>
-      String(m.nombre || '').toLowerCase().trim()
-    );
-    if (nombreMascotaCita && mascotasDelCliente.includes(nombreMascotaCita)) {
-      return true;
-    }
-
-    return false;
-  };
-
   const cargarMascotas = async () => {
     try {
       const data = await MascotaService.listar();
       const lista = Array.isArray(data) ? data : [];
-      const propias = esAdmin
-        ? lista
-        : lista.filter((m) => {
-            const idItem = m.clienteId ?? m.cliente?.id ?? m.usuarioId ?? null;
-            const correoItem = String(m.correoDueno ?? m.correo ?? '')
-              .toLowerCase()
-              .trim();
-            const correoSesion = String(sesion?.correo || '')
-              .toLowerCase()
-              .trim();
-
-            if (sesion?.id != null && idItem != null && String(idItem) === String(sesion.id)) {
-              return true;
-            }
-            if (correoSesion && correoItem && correoItem === correoSesion) {
-              return true;
-            }
-            return false;
-          });
-      setMascotas(propias);
-      return propias;
+      setMascotas(lista);
+      if (!mascotaIdSeleccionada && lista.length > 0) {
+        setMascotaIdSeleccionada(String(lista[0].id));
+      }
+      return lista;
     } catch (err) {
       console.error('Error al cargar mascotas para vincular cita:', err);
       return [];
     }
   };
 
-  const cargarCitas = async (listaMascotas = mascotas) => {
+  const cargarCitas = async () => {
     try {
       const data = await CitaService.listar();
       const lista = Array.isArray(data) ? data : [];
-      const filtradas = esAdmin
-        ? lista
-        : lista.filter((c) => perteneceAlUsuario(c, listaMascotas));
-      setCitas(filtradas);
+      setCitas(lista);
     } catch (err) {
       console.error('Error al cargar citas:', err);
     }
@@ -144,9 +91,9 @@ export default function Citas() {
 
   useEffect(() => {
     const iniciar = async () => {
-      if (!sesion) return;
-      const propias = await cargarMascotas();
-      await cargarCitas(propias);
+      if (!sesion || !esAdmin) return;
+      await cargarMascotas();
+      await cargarCitas();
     };
     iniciar();
   }, []);
@@ -166,14 +113,10 @@ export default function Citas() {
   };
 
   const validarCita = () => {
-    const nombreLimpio = mascotaCitaNombre.trim();
     const motivoLimpio = motivo.trim();
 
-    if (!nombreLimpio) {
-      return 'Debes ingresar el nombre de la mascota.';
-    }
-    if (!regexSoloLetras.test(nombreLimpio)) {
-      return 'El nombre de la mascota solo puede contener letras y espacios.';
+    if (!mascotaIdSeleccionada) {
+      return 'Debes seleccionar una mascota registrada para agendar la cita.';
     }
     if (!fecha) {
       return 'Debes seleccionar una fecha para la cita.';
@@ -215,26 +158,20 @@ export default function Citas() {
     const fechaHoraIso = `${fecha}T${horaNormalizada}`;
 
     const mascotaRelacionada = mascotas.find(
-      (m) => (m.nombre || '').toLowerCase().trim() === mascotaCitaNombre.trim().toLowerCase()
+      (m) => String(m.id) === String(mascotaIdSeleccionada)
     );
 
-    const estadoNormalizado = esAdmin
-      ? formatearEstado(estadoCita)
-      : (editCitaId ? formatearEstado(estadoCita) : 'Pendiente');
-
     const payload = {
-      nombreMascota: mascotaCitaNombre.trim(),
+      nombreMascota: mascotaRelacionada?.nombre || '',
       fecha,
       hora: horaNormalizada,
       fechaHora: fechaHoraIso,
       motivo: motivo.trim(),
-      correoCliente: sesion?.correo || '',
-      nombreCliente: sesion?.nombre || 'Cliente',
-      clienteId: sesion?.id || null,
-      cliente: sesion?.id ? { id: sesion.id } : null,
-      mascotaId: mascotaRelacionada?.id || null,
-      mascota: mascotaRelacionada?.id ? { id: mascotaRelacionada.id } : null,
-      estado: estadoNormalizado
+      correoCliente: mascotaRelacionada?.correoDueno || mascotaRelacionada?.cliente?.correo || '',
+      nombreCliente: mascotaRelacionada?.cliente?.nombre || '',
+      mascotaId: Number(mascotaIdSeleccionada),
+      mascota: { id: Number(mascotaIdSeleccionada) },
+      estado: formatearEstado(estadoCita)
     };
 
     try {
@@ -243,23 +180,25 @@ export default function Citas() {
         setAlerta({ tipo: 'exito', texto: 'Cita actualizada correctamente.' });
       } else {
         await CitaService.crear(payload);
-        setAlerta({ tipo: 'exito', texto: 'Cita agendada correctamente.' });
+        setAlerta({ tipo: 'exito', texto: 'Cita agendada correctamente según disponibilidad.' });
       }
       limpiarFormulario();
-      const propiasActualizadas = await cargarMascotas();
-      await cargarCitas(propiasActualizadas);
+      await cargarMascotas();
+      await cargarCitas();
     } catch (err) {
       console.error('Error al guardar cita:', err);
-      setAlerta({ tipo: 'error', texto: 'Error al guardar la cita en el servidor.' });
+      setAlerta({
+        tipo: 'error',
+        texto: err?.response?.data?.message || 'Error al guardar la cita en el servidor.'
+      });
     }
   };
 
   const prepararEditarCita = (c) => {
-    if (!esAdmin && !perteneceAlUsuario(c)) return;
     const { fechaTexto, horaTexto } = extraerFechaHora(c);
     setEditCitaId(c.id);
     setFechaHoraOriginalEdit(`${fechaTexto}T${horaTexto}`);
-    setMascotaCitaNombre(c.nombreMascota || c.mascota?.nombre || '');
+    setMascotaIdSeleccionada(String(c.mascotaId ?? c.mascota?.id ?? ''));
     setFecha(fechaTexto);
     setHora(horaTexto);
     setMotivo(c.motivo || '');
@@ -268,13 +207,12 @@ export default function Citas() {
   };
 
   const handleEliminarCita = async (c) => {
-    if (!esAdmin && !perteneceAlUsuario(c)) return;
     setAlerta(null);
     try {
       await CitaService.eliminar(c.id);
       setAlerta({ tipo: 'exito', texto: 'Cita eliminada/cancelada.' });
-      const propiasActualizadas = await cargarMascotas();
-      await cargarCitas(propiasActualizadas);
+      await cargarMascotas();
+      await cargarCitas();
     } catch (err) {
       console.error('Error al eliminar cita:', err);
       setAlerta({ tipo: 'error', texto: 'Error al eliminar la cita.' });
@@ -284,19 +222,22 @@ export default function Citas() {
   const limpiarFormulario = () => {
     setEditCitaId(null);
     setFechaHoraOriginalEdit('');
-    setMascotaCitaNombre('');
+    setMascotaIdSeleccionada(mascotas[0] ? String(mascotas[0].id) : '');
     setFecha('');
     setHora('');
     setMotivo('');
-    setEstadoCita('Pendiente');
+    setEstadoCita('Confirmada');
   };
 
-  if (!sesion) {
+  if (!sesion || !esAdmin) {
     return (
       <main style={{ maxWidth: '720px', margin: '2rem auto', textAlign: 'center' }}>
         <section className="tarjeta-panel">
-          <h2>Sesión no iniciada</h2>
-          <p>Inicia sesión para agendar o gestionar citas.</p>
+          <h2>Acceso restringido a recepción / administración</h2>
+          <p>
+            El agendamiento de citas se coordina directamente con recepción según la disponibilidad
+            de los profesionales de Veterinaria San Marcos.
+          </p>
         </section>
       </main>
     );
@@ -305,7 +246,7 @@ export default function Citas() {
   return (
     <main style={{ maxWidth: '920px', margin: '2rem auto' }}>
       <section className="tarjeta-panel">
-        <h3>{editCitaId ? 'Modificar Cita' : 'Agendar Nueva Cita'}</h3>
+        <h3>{editCitaId ? 'Modificar Cita (Recepción)' : 'Agendar Cita según Disponibilidad'}</h3>
 
         {alerta && (
           <div
@@ -322,12 +263,22 @@ export default function Citas() {
           noValidate
           style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.5rem' }}
         >
-          <input
-            type="text"
-            placeholder="Nombre de la mascota"
-            value={mascotaCitaNombre}
-            onChange={(e) => setMascotaCitaNombre(e.target.value)}
-          />
+          <select
+            value={mascotaIdSeleccionada}
+            onChange={(e) => setMascotaIdSeleccionada(e.target.value)}
+          >
+            <option value="">
+              {mascotas.length > 0
+                ? 'Selecciona una mascota'
+                : 'No hay mascotas registradas'}
+            </option>
+            {mascotas.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.nombre} ({m.especie})
+              </option>
+            ))}
+          </select>
+
           <input
             type="date"
             min={fechaHoy}
@@ -335,11 +286,13 @@ export default function Citas() {
             value={fecha}
             onChange={(e) => setFecha(sanitizarFecha4Digitos(e.target.value))}
           />
+
           <input
             type="time"
             value={hora}
             onChange={(e) => setHora(e.target.value)}
           />
+
           <input
             type="text"
             placeholder="Motivo de consulta (ej: Control, Vacuna)"
@@ -347,15 +300,13 @@ export default function Citas() {
             onChange={(e) => setMotivo(e.target.value)}
           />
 
-          {esAdmin && (
-            <select value={estadoCita} onChange={(e) => setEstadoCita(e.target.value)}>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Confirmada">Confirmada</option>
-              <option value="Atendida">Atendida</option>
-              <option value="Completada">Completada</option>
-              <option value="Cancelada">Cancelada</option>
-            </select>
-          )}
+          <select value={estadoCita} onChange={(e) => setEstadoCita(e.target.value)}>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Confirmada">Confirmada</option>
+            <option value="Atendida">Atendida</option>
+            <option value="Completada">Completada</option>
+            <option value="Cancelada">Cancelada</option>
+          </select>
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button type="submit" className="btn">
@@ -377,7 +328,7 @@ export default function Citas() {
           </div>
         </form>
 
-        <h4>{esAdmin ? 'Citas Agendadas' : 'Mis Citas'}</h4>
+        <h4>Citas Agendadas</h4>
         <table className="tabla-adaptable">
           <thead>
             <tr>
@@ -400,24 +351,22 @@ export default function Citas() {
                   <td>{c.motivo}</td>
                   <td>{formatearEstado(c.estado)}</td>
                   <td style={{ textAlign: 'center' }}>
-                    {(esAdmin || perteneceAlUsuario(c)) && (
-                      <div className="acciones-tabla">
-                        <button
-                          type="button"
-                          className="btn-accion btn-accion-editar"
-                          onClick={() => prepararEditarCita(c)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-accion btn-accion-eliminar"
-                          onClick={() => handleEliminarCita(c)}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    )}
+                    <div className="acciones-tabla">
+                      <button
+                        type="button"
+                        className="btn-accion btn-accion-editar"
+                        onClick={() => prepararEditarCita(c)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-accion btn-accion-eliminar"
+                        onClick={() => handleEliminarCita(c)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

@@ -1,23 +1,21 @@
-const API_URL = 'http://localhost:8080/api/pedidos';
+import api from './api';
 
 const PedidoService = {
   listar: async () => {
-    const res = await fetch(API_URL);
-    if (!res.ok) throw new Error('Error al obtener pedidos');
-    return res.json();
+    const res = await api.get('/pedidos');
+    return res.data;
   },
 
   crear: async (pedido) => {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(pedido),
-    });
-    if (!res.ok) {
-      const texto = await res.text();
-      throw new Error(texto || 'Error al registrar el pedido');
+    try {
+      const res = await api.post('/pedidos', pedido);
+      return res.data;
+    } catch (error) {
+      const mensajeBackend =
+        error?.response?.data?.message ||
+        (typeof error?.response?.data === 'string' ? error.response.data : null);
+      throw new Error(mensajeBackend || 'Error al registrar el pedido');
     }
-    return res.json();
   },
 };
 

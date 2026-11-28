@@ -39,7 +39,9 @@ export default function Mascotas() {
     if (esAdmin) return true;
 
     const idItem = m.clienteId ?? m.cliente?.id ?? m.usuarioId ?? null;
-    const correoItem = (m.correoDueno || m.correo || '').toLowerCase().trim();
+    const correoItem = (m.correoDueno || m.cliente?.correo || m.correo || '')
+      .toLowerCase()
+      .trim();
     const correoSesion = (sesion.correo || '').toLowerCase().trim();
 
     if (sesion.id != null && idItem != null && String(idItem) === String(sesion.id)) {
@@ -101,9 +103,7 @@ export default function Mascotas() {
       especie,
       raza: raza.trim(),
       edad: Number(edad),
-      correoDueno: sesion?.correo || '',
-      clienteId: sesion?.id || null,
-      cliente: sesion?.id ? { id: sesion.id } : null
+      correoDueno: sesion?.correo || ''
     };
 
     try {
@@ -118,7 +118,10 @@ export default function Mascotas() {
       await cargarMascotas();
     } catch (err) {
       console.error('Error al guardar mascota:', err);
-      setAlerta({ tipo: 'error', texto: 'Error al guardar la mascota en el servidor.' });
+      setAlerta({
+        tipo: 'error',
+        texto: err?.response?.data?.message || 'Error al guardar la mascota en el servidor.'
+      });
     }
   };
 

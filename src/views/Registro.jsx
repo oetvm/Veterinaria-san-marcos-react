@@ -73,37 +73,40 @@ export default function Registro() {
     setCargando(true);
 
     try {
-      const esAdmin =
-        correoLimpio.includes('admin') || correoLimpio.endsWith('@veterinaria.cl');
-
-      const clientePayload = {
+      const registroPayload = {
         nombre: nombreLimpio,
         correo: correoLimpio,
-        password,
-        rol: esAdmin ? 'admin' : 'cliente'
+        password
       };
 
-      const resCliente = await api.post('/clientes', clientePayload);
-      const clienteGuardado = resCliente?.data || {};
-      const clienteIdReal = clienteGuardado.id || Date.now();
+      const resRegistro = await api.post('/auth/register', registroPayload);
+      const data = resRegistro?.data || {};
+      const rolFinal = String(data.rol || 'cliente').toLowerCase();
+
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
 
       const nuevoUsuario = {
-        id: clienteIdReal,
-        nombre: nombreLimpio,
-        correo: correoLimpio,
-        password,
-        rol: esAdmin ? 'admin' : 'cliente'
+        nombre: data.nombre || nombreLimpio,
+        correo: data.correo || correoLimpio,
+        rol: rolFinal
       };
 
       usuariosExistentes.push(nuevoUsuario);
       localStorage.setItem('usuarios_registrados', JSON.stringify(usuariosExistentes));
       localStorage.setItem('usuario_sesion', JSON.stringify(nuevoUsuario));
 
-      navigate(nuevoUsuario.rol === 'admin' ? '/admin' : '/perfil');
+      navigate(rolFinal === 'admin' ? '/admin' : '/perfil');
     } catch (err) {
       console.error('Error al guardar en backend:', err);
+      const msgBackend =
+        typeof err?.response?.data === 'string'
+          ? err.response.data
+          : err?.response?.data?.message || err?.response?.data?.error;
       setError(
-        'No se pudo registrar el cliente en la base de datos. Verifica que el backend esté encendido.'
+        msgBackend ||
+          'No se pudo registrar el cliente en la base de datos. Verifica que el backend esté encendido.'
       );
     } finally {
       setCargando(false);

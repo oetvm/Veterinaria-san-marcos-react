@@ -39,57 +39,43 @@ export default function Login() {
       return;
     }
 
-    let usuariosExistentes = [];
-    try {
-      const raw = JSON.parse(localStorage.getItem('usuarios_registrados') || '[]');
-      usuariosExistentes = Array.isArray(raw) ? raw : [];
-    } catch {
-      usuariosExistentes = [];
-    }
-
-    let usuarioEncontrado = null;
-
-    if (correoLimpio === 'admin@veterinaria.cl' && password === 'admin123') {
-      usuarioEncontrado = {
-        id: 1,
-        nombre: 'Administrador San Marcos',
-        correo: 'admin@veterinaria.cl',
-        rol: 'admin',
-        mascota: 'Mascota Clínica'
-      };
-    } else {
-      usuarioEncontrado = usuariosExistentes.find(
-        (u) =>
-          String(u?.correo || '').toLowerCase().trim() === correoLimpio &&
-          u?.password === password
-      );
-    }
-
-    if (!usuarioEncontrado) {
-      setError('Credenciales incorrectas. Si no tienes cuenta, debes registrarte.');
-      return;
-    }
-
     setCargando(true);
     try {
-      try {
-        const resAuth = await api.post('/auth/login', {
-          email: correoLimpio,
-          password
-        });
-        if (resAuth.data && resAuth.data.token) {
-          localStorage.setItem('token', resAuth.data.token);
-        }
-      } catch {
-        // Si el usuario solo existe en localStorage o el backend usa permitAll, continúa sin bloquear
+      const resAuth = await api.post('/auth/login', {
+        correo: correoLimpio,
+        password
+      });
+
+      const data = resAuth?.data || {};
+      const rolFinal = String(data.rol || 'cliente').toLowerCase();
+
+      if (data.token) {
+        localStorage.setItem('token', data.token);
       }
 
-      localStorage.setItem('usuario_sesion', JSON.stringify(usuarioEncontrado));
+      const usuarioSesion = {
+        id: data.id ?? data.clienteId ?? data.usuarioId ?? null,
+        nombre: data.nombre || correoLimpio,
+        correo: data.correo || correoLimpio,
+        rol: rolFinal
+      };
 
-      if (usuarioEncontrado.rol === 'admin') {
+      localStorage.setItem('usuario_sesion', JSON.stringify(usuarioSesion));
+
+      if (rolFinal === 'admin') {
         navigate('/admin');
       } else {
         navigate('/perfil');
+      }
+    } catch (err) {
+      console.error('Error al iniciar sesión:', err);
+      const status = err?.response?.status;
+      if (status === 401 || status === 400) {
+        setError('Credenciales incorrectas. Si no tienes cuenta, debes registrarte.');
+      } else {
+        setError(
+          'No se pudo conectar con el servidor. Verifica que el backend esté encendido.'
+        );
       }
     } finally {
       setCargando(false);

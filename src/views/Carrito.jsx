@@ -36,6 +36,8 @@ export default function Carrito({
     usuario = null;
   }
 
+  const token = localStorage.getItem('token');
+
   const totalPagar = carrito.reduce(
     (acc, item) => acc + Number(item.precio || 0) * normalizarCantidad(item.cantidad),
     0
@@ -62,7 +64,7 @@ export default function Carrito({
     setMensaje('');
     setError('');
 
-    if (!usuario || !usuario.id) {
+    if (!token || !usuario || !usuario.correo) {
       setError('Debes iniciar sesión con una cuenta válida para confirmar tu pedido.');
       return;
     }
@@ -94,7 +96,8 @@ export default function Carrito({
         const subtotalItem = Number(item.precio || 0) * cantidadItem;
 
         const payload = {
-          cliente: { id: Number(usuario.id) },
+          ...(usuario.id ? { cliente: { id: Number(usuario.id) } } : {}),
+          correoCliente: usuario.correo,
           producto: { id: Number(item.id) },
           cantidad: cantidadItem,
           total: subtotalItem,
@@ -110,7 +113,7 @@ export default function Carrito({
       setMensaje(resumenCompra.textoGracias);
     } catch (err) {
       console.error('Error al confirmar pedido:', err);
-      setError(err.message || 'No se pudo registrar el pedido en el servidor.');
+      setError(err?.response?.data?.message || err.message || 'No se pudo registrar el pedido en el servidor.');
     } finally {
       setProcesando(false);
     }
@@ -144,7 +147,7 @@ export default function Carrito({
               <p className="mensaje-exito" style={{ marginTop: 0, marginBottom: '0.75rem' }}>
                 {mensaje || compraExitosa.textoGracias}
               </p>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
                 Tu pedido ({compraExitosa.unidades}{' '}
                 {compraExitosa.unidades === 1 ? 'producto' : 'productos'}) por un total de{' '}
                 <strong style={{ color: 'var(--text-main)' }}>
@@ -152,18 +155,22 @@ export default function Carrito({
                 </strong>{' '}
                 quedó registrado con estado <strong>CONFIRMADO</strong>. ¡Un gran saludo de todo nuestro equipo!
               </p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', marginBottom: '1.25rem' }}>
+                Si necesitas coordinar una consulta veterinaria, comunícate directamente con recepción
+                según disponibilidad horaria.
+              </p>
 
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <Link to="/productos" className="btn" onClick={limpiarAgradecimiento}>
                   Seguir comprando
                 </Link>
                 <Link
-                  to="/citas"
+                  to="/mascotas"
                   className="btn"
                   style={{ backgroundColor: '#64748b' }}
                   onClick={limpiarAgradecimiento}
                 >
-                  Agendar una cita
+                  Ver mis mascotas
                 </Link>
               </div>
             </div>
