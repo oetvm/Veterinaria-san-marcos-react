@@ -46,18 +46,19 @@ Veterinaria-san-marcos-react/
 ```
 ## ✨ Funcionalidades y Navegación
 
-- **Navegación y tema:** acceso a Inicio, Productos, Carrito, Iniciar Sesión y Registrarse, junto con alternancia entre modo claro y Oscuro.
+- **Navegación y tema:** acceso a Inicio, Productos, Carrito, Iniciar Sesión y Registrarse, junto con alternancia entre modo claro y oscuro.
+- **Catálogo, carrito y mascotas:** exploración de productos, detalle de producto con acceso rápido al carrito, confirmación de pedidos y gestión de mascotas.
 - **Operaciones CRUD conectadas a MySQL:** gestión de productos, carrito/pedidos, mascotas y citas a través de los servicios con Axios y el backend en el puerto 8080.
-- **Sesión y roles:** control de acceso y acciones según usuario autenticado y rol (admin / cliente).
+- **Sesión y roles:** control de acceso y acciones según usuario autenticado y rol (admin / cliente), restringiendo la administración de citas al rol admin.
 - **Validaciones en formularios:** validación de nombres y razas (solo letras y espacios), años de 4 dígitos, bloqueo de fechas/horas pasadas al agendar citas y límites de edad según especie (Exótico hasta 80 años; otras especies hasta 25 años).
 
 ## 🚀 Ejecución Local (VS Code)
 
-- Verifica que MySQL y el Backend (Spring Boot) estén corriendo en http://localhost:8080.
-- Abre la carpeta Veterinaria-san-marcos-react en VS Code y abre la terminal integrada.
+- Verifica que MySQL y el backend (Spring Boot) estén corriendo en `http://localhost:8080`.
+- Abre la carpeta `Veterinaria-san-marcos-react` en VS Code y abre la terminal integrada.
 - Instala las dependencias:
 ```bash
-npm install
+  npm install
 ```
 - Inicia el servidor de desarrollo:
 ```bash
